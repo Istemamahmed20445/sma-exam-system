@@ -31,6 +31,7 @@
                 <h2>Student Results</h2>
                 <div class="results-header">
                     <button onclick="refreshResults()" class="btn-secondary">Refresh</button>
+                    <button onclick="openImportResults()" class="btn-secondary">Import CSV</button>
                     <button onclick="exportResults()" class="btn-secondary">Export CSV</button>
                 </div>
                 <div id="results-list" class="results-container">
@@ -152,6 +153,7 @@
                                 <td>${result.percentage}%</td>
                                 <td>${new Date(result.submitted_at).toLocaleString()}</td>
                                 <td>
+                                    <a href="/results/${result.result_id}" target="_blank" class="btn-edit" style="text-decoration: none; display: inline-block; margin-right: 5px;">View</a>
                                     <button onclick="deleteResult('${result.result_id}')" class="btn-delete-small">Delete</button>
                                 </td>
                             </tr>
@@ -355,6 +357,120 @@
             .catch(error => {
                 alert('Error importing questions: ' + error.message);
             });
+        }
+
+        // CSV Import Functions
+        function openImportResults() {
+            const importModal = `
+                <div class="bulk-upload-modal" id="import-results-modal">
+                    <div class="modal-content">
+                        <h2>Import Results from CSV</h2>
+                        <p>Upload a CSV file with results data. Download template for format.</p>
+                        
+                        <div class="form-group">
+                            <button onclick="downloadResultsTemplate()" class="btn-secondary">Download Template</button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Upload CSV File</label>
+                            <input type="file" id="results-csv-file" accept=".csv" onchange="handleResultsFile()">
+                        </div>
+                        
+                        <div id="results-preview" style="display: none;"></div>
+                        
+                        <div class="modal-buttons">
+                            <button onclick="closeImportResults()" class="btn-secondary">Cancel</button>
+                            <button onclick="importResultsCSV()" id="import-results-btn" class="btn-primary" style="display: none;">Import Results</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', importModal);
+        }
+        
+        function closeImportResults() {
+            document.getElementById('import-results-modal').remove();
+        }
+        
+        function downloadResultsTemplate() {
+            // Create CSV template for results
+            const csvContent = `student_name,student_email,exam_title,score,total_questions,percentage,submitted_at
+John Doe,john@example.com,Mock Exam 1,45,50,90.0,2024-01-15T10:30:00
+Jane Smith,jane@example.com,Mock Exam 1,38,50,76.0,2024-01-15T11:00:00`;
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'results_template.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+        
+        function handleResultsFile() {
+            const fileInput = document.getElementById('results-csv-file');
+            if (!fileInput.files.length) return;
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const csv = e.target.result;
+                const lines = csv.split('\n');
+                const headers = lines[0].split(',');
+                
+                if (lines.length < 2) {
+                    alert('CSV file is empty or has no data rows');
+                    return;
+                }
+                
+                const preview = document.getElementById('results-preview');
+                const importBtn = document.getElementById('import-results-btn');
+                
+                preview.style.display = 'block';
+                preview.innerHTML = `
+                    <div class="bulk-preview-info">
+                        <h3>Preview</h3>
+                        <p><strong>Total Rows:</strong> ${lines.length - 1}</p>
+                        <p><strong>Columns:</strong> ${headers.join(', ')}</p>
+                    </div>
+                `;
+                
+                importBtn.style.display = 'inline-block';
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        async function importResultsCSV() {
+            const fileInput = document.getElementById('results-csv-file');
+            if (!fileInput.files.length) {
+                alert('Please select a CSV file');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            try {
+                const response = await fetch('/api/results/import', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`Successfully imported ${data.imported} results!`);
+                    closeImportResults();
+                    loadResults();
+                } else {
+                    alert('Error importing results: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error importing results: ' + error.message);
+            }
         }
 
         // Load data on page load

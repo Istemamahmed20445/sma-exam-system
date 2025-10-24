@@ -302,6 +302,76 @@ def delete_result(result_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/results/import', methods=['POST'])
+def import_results():
+    """Import results from CSV"""
+    if not is_admin():
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No file selected'}), 400
+        
+        # Read CSV
+        content = file.read().decode('utf-8')
+        csv_reader = csv.DictReader(content.splitlines())
+        
+        imported = 0
+        errors = []
+        
+        for row_num, row in enumerate(csv_reader, start=2):
+            try:
+                # Get exam by title
+                exam_ref = db.collection('exams').where('title', '==', row['exam_title']).limit(1).stream()
+                exam_doc = next(exam_ref, None)
+                
+                if not exam_doc:
+                    errors.append(f'Row {row_num}: Exam "{row["exam_title"]}" not found')
+                    continue
+                
+                exam_id = exam_doc.id
+                
+                # Parse submitted_at date
+                submitted_at = datetime.fromisoformat(row['submitted_at'].replace('Z', '+00:00'))
+                
+                # Create result document
+                result_data = {
+                    'exam_id': exam_id,
+                    'exam_title': row['exam_title'],
+                    'student_name': row['student_name'],
+                    'student_email': row.get('student_email', ''),
+                    'score': int(row['score']),
+                    'total_questions': int(row['total_questions']),
+                    'percentage': float(row['percentage']),
+                    'submitted_at': submitted_at,
+                    'answers': []  # Empty answers array for imported results
+                }
+                
+                db.collection('results').add(result_data)
+                imported += 1
+                
+            except Exception as e:
+                errors.append(f'Row {row_num}: {str(e)}')
+        
+        if imported > 0:
+            return jsonify({
+                'success': True,
+                'imported': imported,
+                'errors': errors if errors else None
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'No results imported. ' + ', '.join(errors[:5])
+            }), 400
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/upload-image', methods=['POST'])
 def upload_image():
     """Upload image to Firebase Storage"""
