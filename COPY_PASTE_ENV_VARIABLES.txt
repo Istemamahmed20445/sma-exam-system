@@ -1,0 +1,65 @@
+========================================
+COPY & PASTE THESE ENVIRONMENT VARIABLES
+========================================
+
+Add these 3 variables in Render Dashboard → Environment tab
+
+========================================
+ENVIRONMENT VARIABLE #1
+========================================
+
+Key: ADMIN_PASSWORD
+
+Value: Admin@2024Secure!
+
+========================================
+ENVIRONMENT VARIABLE #2
+========================================
+
+Key: FLASK_ENV
+
+Value: production
+
+========================================
+ENVIRONMENT VARIABLE #3
+========================================
+
+Key: FIREBASE_CONFIG
+
+Value: [Copy entire content from firebase_config.json file]
+
+INSTRUCTIONS:
+1. Open the file: mock-exam-sma-firebase-adminsdk-fbsvc-3e6174fe7e.json
+2. Copy ALL content from { to }
+3. Paste it here
+
+========================================
+HOW TO ADD IN RENDER
+========================================
+
+1. Go to: https://render.com/dashboard
+2. Click on your service (sma-exam-system)
+3. Click "Environment" tab
+4. Click "Add Environment Variable"
+5. Add Variable #1: ADMIN_PASSWORD
+6. Click "Add Environment Variable" again
+7. Add Variable #2: FLASK_ENV
+8. Click "Add Environment Variable" again
+9. Add Variable #3: FIREBASE_CONFIG
+10. Save Changes
+
+========================================
+IMPORTANT NOTE
+========================================
+
+For FIREBASE_CONFIG:
+- Copy the ENTIRE JSON object above
+- Include ALL text from { to }
+- No extra spaces
+
+========================================
+DONE!
+========================================
+
+After adding all 3 variables, Render will auto-deploy!
+
