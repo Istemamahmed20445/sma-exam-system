@@ -16,7 +16,16 @@ app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-change-this-in-product
 
 # Initialize Firebase Admin SDK
 if not firebase_admin._apps:
-    cred = credentials.Certificate('firebase_config.json')
+    # Try to load Firebase config from environment variable (for Render deployment)
+    firebase_config_env = os.getenv('FIREBASE_CONFIG')
+    if firebase_config_env:
+        # Parse JSON from environment variable
+        firebase_config = json.loads(firebase_config_env)
+        cred = credentials.Certificate(firebase_config)
+    else:
+        # Fallback to file (for local development)
+        cred = credentials.Certificate('firebase_config.json')
+    
     firebase_admin.initialize_app(cred, {
         'storageBucket': 'mock-exam-sma.firebasestorage.app'
     })
