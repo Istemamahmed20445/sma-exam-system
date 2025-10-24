@@ -99,7 +99,7 @@
 
         function copyExamLink(examId, e) {
             e.preventDefault();
-            const examLink = `${window.location.origin}/exam/${examId}`;
+            const examLink = `${window.location.origin}/?exam=${examId}`;
             
             console.log('Copy link clicked for:', examId);
             console.log('Link:', examLink);
@@ -161,6 +161,15 @@
                 window.location.href = `/exam/${currentExamId}?name=${encodeURIComponent(studentName)}&email=${encodeURIComponent(studentEmail)}`;
             }
         });
+
+        // Check if exam ID is in URL parameter (from shared link)
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedExamId = urlParams.get('exam');
+        if (sharedExamId) {
+            currentExamId = sharedExamId;
+            document.querySelector('.exam-section').style.display = 'none';
+            document.getElementById('login-section').style.display = 'block';
+        }
 
         // Load exams on page load
         loadExams();
