@@ -81,7 +81,12 @@
                         <p><strong>Questions:</strong> ${exam.questions ? exam.questions.length : 0}</p>
                         <p><strong>Passing Marks:</strong> ${exam.passing_marks}%</p>
                     </div>
-                    <button class="btn-start" onclick="startExam('${exam.exam_id}')">Start Exam</button>
+                    <div class="exam-actions">
+                        <button class="btn-start" onclick="startExam('${exam.exam_id}')">Start Exam</button>
+                        <button class="btn-copy-link" onclick="copyExamLink('${exam.exam_id}', event)" title="Copy exam link">
+                            <span class="copy-icon">🔗</span> Copy Link
+                        </button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -90,6 +95,51 @@
             currentExamId = examId;
             document.querySelector('.exam-section').style.display = 'none';
             document.getElementById('login-section').style.display = 'block';
+        }
+
+        function copyExamLink(examId, e) {
+            e.preventDefault();
+            const examLink = `${window.location.origin}/exam/${examId}`;
+            
+            console.log('Copy link clicked for:', examId);
+            console.log('Link:', examLink);
+            
+            // Get the button that was clicked
+            const button = e.target.tagName === 'BUTTON' ? e.target : e.target.closest('.btn-copy-link');
+            
+            if (!button) {
+                console.error('Button not found');
+                alert('Error: Could not find button');
+                return;
+            }
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(examLink).then(() => {
+                console.log('Successfully copied to clipboard');
+                // Show success message
+                const originalText = button.innerHTML;
+                button.innerHTML = '<span class="copy-icon">✓</span> Copied!';
+                button.style.backgroundColor = '#28a745';
+                
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.style.backgroundColor = '';
+                }, 2000);
+            }).catch(err => {
+                console.error('Clipboard API failed:', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = examLink;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                alert('Link copied: ' + examLink);
+            });
         }
 
         document.getElementById('student-login-form').addEventListener('submit', function(e) {

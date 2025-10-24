@@ -14,6 +14,7 @@
             <h1>Admin Dashboard</h1>
             <div class="admin-actions">
                 <a href="/admin/exam/create" class="btn-primary">Create New Exam</a>
+                <button onclick="openBulkUpload()" class="btn-secondary">Bulk Upload Questions</button>
                 <a href="/admin/logout" class="btn-secondary">Logout</a>
             </div>
         </header>
@@ -188,6 +189,172 @@
 
         function exportResults() {
             alert('CSV export functionality coming soon!');
+        }
+
+        // Bulk Upload Functions
+        function openBulkUpload() {
+            // Get exam selection if there are exams
+            const examSelect = `
+                <div class="bulk-upload-modal" id="bulk-upload-modal">
+                    <div class="modal-content">
+                        <h2>Bulk Upload Questions</h2>
+                        <p>Upload a CSV file with questions. Download template for format.</p>
+                        
+                        <div class="form-group">
+                            <label>Select Exam</label>
+                            <select id="bulk-exam-select" class="form-group select">
+                                <option value="">-- Select Exam --</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button onclick="downloadTemplate()" class="btn-secondary">Download Template</button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Upload CSV File</label>
+                            <input type="file" id="bulk-csv-file" accept=".csv" onchange="validateBulkUpload()">
+                        </div>
+                        
+                        <div id="bulk-preview" style="display: none;"></div>
+                        
+                        <div class="modal-buttons">
+                            <button onclick="closeBulkUpload()" class="btn-secondary">Cancel</button>
+                            <button onclick="importBulkQuestions()" id="bulk-import-btn" class="btn-primary" style="display: none;">Import Questions</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', examSelect);
+            
+            // Populate exam select
+            populateExamSelect();
+        }
+        
+        function populateExamSelect() {
+            fetch('/api/exams')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const select = document.getElementById('bulk-exam-select');
+                        select.innerHTML = '<option value="">-- Select Exam --</option>';
+                        data.exams.forEach(exam => {
+                            select.innerHTML += `<option value="${exam.exam_id}">${exam.title}</option>`;
+                        });
+                    }
+                });
+        }
+        
+        function downloadTemplate() {
+            window.location.href = '/api/bulk-upload-template';
+        }
+        
+        function closeBulkUpload() {
+            document.getElementById('bulk-upload-modal').remove();
+        }
+        
+        function validateBulkUpload() {
+            const fileInput = document.getElementById('bulk-csv-file');
+            const examId = document.getElementById('bulk-exam-select').value;
+            
+            if (!examId) {
+                alert('Please select an exam first');
+                return;
+            }
+            
+            if (!fileInput.files.length) {
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            fetch('/api/bulk-upload-validate', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showBulkPreview(data);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Error validating file: ' + error.message);
+            });
+        }
+        
+        function showBulkPreview(data) {
+            const preview = document.getElementById('bulk-preview');
+            const importBtn = document.getElementById('bulk-import-btn');
+            
+            let html = `
+                <div class="bulk-preview-info">
+                    <h3>Preview</h3>
+                    <p><strong>Total Rows:</strong> ${data.total_rows}</p>
+                    <p><strong>Valid Questions:</strong> ${data.valid_questions}</p>
+                    ${data.errors.length > 0 ? `<p class="error"><strong>Errors:</strong> ${data.errors.length}</p>` : ''}
+                </div>
+            `;
+            
+            if (data.errors.length > 0) {
+                html += '<div class="bulk-errors"><h4>Errors:</h4><ul>';
+                data.errors.forEach(err => {
+                    html += `<li>${err}</li>`;
+                });
+                html += '</ul></div>';
+            }
+            
+            if (data.valid_questions > 0) {
+                html += '<div class="bulk-questions"><h4>Sample Questions:</h4>';
+                data.questions.slice(0, 3).forEach((q, i) => {
+                    html += `
+                        <div class="bulk-question-sample">
+                            <p><strong>Q${i+1}:</strong> ${q.question_text}</p>
+                            <p><strong>Correct Answer:</strong> ${q.options[q.correct_answer]}</p>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                
+                importBtn.style.display = 'inline-block';
+                window.bulkQuestionsData = data;
+            }
+            
+            preview.innerHTML = html;
+            preview.style.display = 'block';
+        }
+        
+        function importBulkQuestions() {
+            const examId = document.getElementById('bulk-exam-select').value;
+            const questions = window.bulkQuestionsData.questions;
+            
+            fetch('/api/bulk-upload-import', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    exam_id: examId,
+                    questions: questions
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Successfully imported ${data.imported} questions!\nTotal questions in exam: ${data.total_questions}`);
+                    closeBulkUpload();
+                    loadExams();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Error importing questions: ' + error.message);
+            });
         }
 
         // Load data on page load

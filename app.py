@@ -1,10 +1,12 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 import os
 from datetime import datetime
 import json
 from dotenv import load_dotenv
+import csv
+import io
 
 # Load environment variables
 load_dotenv()
@@ -307,6 +309,186 @@ def upload_image():
         blob.make_public()
         
         return jsonify({'success': True, 'url': blob.public_url})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/bulk-upload-template')
+def download_template():
+    """Download CSV template for bulk question upload"""
+    if not is_admin():
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        # Create CSV template in memory
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow(['question_text', 'option_1', 'option_2', 'option_3', 'option_4', 'option_5', 'correct_answer', 'explanation'])
+        
+        # Write example rows
+        writer.writerow([
+            'What is the powerhouse of the cell?',
+            'Nucleus',
+            'Mitochondria',
+            'Ribosome',
+            'Golgi Apparatus',
+            '',
+            '2',
+            'Mitochondria is known as the powerhouse of the cell because it produces ATP'
+        ])
+        writer.writerow([
+            'Normal resting heart rate for adults?',
+            '40-60 bpm',
+            '60-100 bpm',
+            '100-120 bpm',
+            '120-140 bpm',
+            '',
+            '2',
+            'Normal resting heart rate ranges from 60-100 beats per minute'
+        ])
+        
+        output.seek(0)
+        
+        # Create Flask response
+        response = app.response_class(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=question_template.csv'}
+        )
+        
+        return response
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/bulk-upload-validate', methods=['POST'])
+def validate_bulk_upload():
+    """Validate CSV file and return preview"""
+    if not is_admin():
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No file selected'}), 400
+        
+        # Read CSV using built-in csv module
+        stream = io.StringIO(file.read().decode('utf-8'))
+        reader = csv.DictReader(stream)
+        
+        # Validate columns
+        required_columns = ['question_text', 'option_1', 'option_2', 'correct_answer', 'explanation']
+        if not reader.fieldnames:
+            return jsonify({'success': False, 'error': 'Invalid CSV file'}), 400
+        
+        missing_columns = [col for col in required_columns if col not in reader.fieldnames]
+        if missing_columns:
+            return jsonify({
+                'success': False,
+                'error': f'Missing columns: {", ".join(missing_columns)}'
+            }), 400
+        
+        # Validate data
+        errors = []
+        questions = []
+        
+        for row_num, row in enumerate(reader, start=2):  # Start at 2 (row 1 is header)
+            # Check required fields
+            if not row.get('question_text') or not row['question_text'].strip():
+                errors.append(f'Row {row_num}: Question text is required')
+                continue
+            
+            # Get options
+            options = []
+            for i in range(1, 6):
+                col_name = f'option_{i}'
+                value = row.get(col_name, '').strip()
+                if value:
+                    options.append(value)
+            
+            if len(options) < 2:
+                errors.append(f'Row {row_num}: At least 2 options required')
+                continue
+            
+            # Validate correct answer
+            try:
+                correct_answer = int(row['correct_answer'])
+                if correct_answer < 1 or correct_answer > len(options):
+                    errors.append(f'Row {row_num}: Correct answer must be between 1 and {len(options)}')
+                    continue
+            except (ValueError, TypeError):
+                errors.append(f'Row {row_num}: Correct answer must be a number')
+                continue
+            
+            # Check explanation
+            if not row.get('explanation') or not row['explanation'].strip():
+                errors.append(f'Row {row_num}: Explanation is required')
+                continue
+            
+            # Store valid question
+            questions.append({
+                'question_text': row['question_text'].strip(),
+                'options': options,
+                'correct_answer': correct_answer - 1,  # Convert to 0-based index
+                'explanation': row['explanation'].strip(),
+                'question_image_url': '',
+                'explanation_image_url': ''
+            })
+        
+        return jsonify({
+            'success': True,
+            'questions': questions,
+            'errors': errors,
+            'total_rows': row_num - 1,  # Exclude header
+            'valid_questions': len(questions)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/bulk-upload-import', methods=['POST'])
+def import_bulk_questions():
+    """Import validated questions to an exam"""
+    if not is_admin():
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        data = request.json
+        exam_id = data.get('exam_id')
+        questions = data.get('questions', [])
+        
+        if not exam_id:
+            return jsonify({'success': False, 'error': 'Exam ID required'}), 400
+        
+        if not questions:
+            return jsonify({'success': False, 'error': 'No questions to import'}), 400
+        
+        # Get exam
+        exam_ref = db.collection('exams').document(exam_id)
+        exam = exam_ref.get()
+        
+        if not exam.exists:
+            return jsonify({'success': False, 'error': 'Exam not found'}), 404
+        
+        exam_data = exam.to_dict()
+        existing_questions = exam_data.get('questions', [])
+        
+        # Add new questions (maintain serial/order)
+        updated_questions = existing_questions + questions
+        
+        # Update exam
+        exam_ref.update({
+            'questions': updated_questions,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
+        
+        return jsonify({
+            'success': True,
+            'imported': len(questions),
+            'total_questions': len(updated_questions)
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
