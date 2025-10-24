@@ -318,6 +318,7 @@
 
             try {
                 const thumbnailUrl = document.getElementById('thumbnail-url').value;
+                console.log('Saving exam with thumbnail:', thumbnailUrl);
                 const response = await fetch('/api/exam/save', {
                     method: 'POST',
                     headers: {

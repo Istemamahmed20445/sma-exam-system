@@ -73,7 +73,10 @@
                 return;
             }
 
-            examList.innerHTML = exams.map(exam => `
+            console.log('Exams data:', exams);
+            examList.innerHTML = exams.map(exam => {
+                console.log('Exam:', exam.title, 'Thumbnail:', exam.thumbnail_url);
+                return `
                 <div class="exam-card" data-exam-id="${exam.exam_id}">
                     ${exam.thumbnail_url ? `<div class="exam-thumbnail"><img src="${exam.thumbnail_url}" alt="${exam.title}"></div>` : ''}
                     <h3>${exam.title}</h3>
@@ -89,7 +92,8 @@
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         function startExam(examId) {
