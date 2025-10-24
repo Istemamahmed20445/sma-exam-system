@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results - Shahriar's Medical Academy</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/exam.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo">
+                <div class="header-text">
+                    <h1>Shahriar's Medical Academy</h1>
+                    <p class="subtitle">Exam Results</p>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div id="results-container">
+                <div class="loading">Loading results...</div>
+            </div>
+        </main>
+
+        <footer>
+            <a href="/" class="btn-primary">Take Another Exam</a>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/firebase-config.js') }}"></script>
+    <script>
+        const resultId = '{{ result_id }}';
+
+        async function loadResults() {
+            try {
+                const response = await fetch(`/api/result/${resultId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data.result);
+                } else {
+                    document.getElementById('results-container').innerHTML = 
+                        '<div class="error">Failed to load results.</div>';
+                }
+            } catch (error) {
+                document.getElementById('results-container').innerHTML = 
+                    '<div class="error">Error loading results: ' + error.message + '</div>';
+            }
+        }
+
+        function displayResults(result) {
+            const exam = result.exam;
+            const percentage = result.percentage;
+            const passPercentage = exam.passing_marks;
+            const passed = percentage >= passPercentage;
+            
+            const container = document.getElementById('results-container');
+            container.innerHTML = `
+                <div class="results-summary">
+                    <h2>${exam.title}</h2>
+                    <div class="student-info">
+                        <p><strong>Student:</strong> ${result.student_name}</p>
+                        ${result.student_email ? `<p><strong>Email:</strong> ${result.student_email}</p>` : ''}
+                        <p><strong>Date:</strong> ${new Date(result.submitted_at).toLocaleString()}</p>
+                    </div>
+                    <div class="score-display ${passed ? 'passed' : 'failed'}">
+                        <div class="score-circle">
+                            <span class="score-percentage">${percentage.toFixed(1)}%</span>
+                            <span class="score-label">Score</span>
+                        </div>
+                        <div class="score-details">
+                            <p><strong>Marks:</strong> ${result.score} / ${result.total_questions}</p>
+                            <p><strong>Passing Marks:</strong> ${passPercentage}%</p>
+                            <p class="status"><strong>Status:</strong> ${passed ? 'PASSED ✓' : 'FAILED ✗'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="questions-review">
+                    <h3>Question Review</h3>
+                    ${exam.questions.map((question, index) => {
+                        const studentAnswer = result.answers[index];
+                        const correctAnswer = question.correct_answer;
+                        const isCorrect = studentAnswer === correctAnswer;
+                        
+                        return `
+                            <div class="question-review ${isCorrect ? 'correct' : 'incorrect'}">
+                                <div class="question-header">
+                                    <span class="question-num">Question ${index + 1}</span>
+                                    <span class="answer-status">${isCorrect ? '✓ Correct' : '✗ Incorrect'}</span>
+                                </div>
+                                <div class="question-text">${question.question_text}</div>
+                                ${question.question_image_url ? `
+                                    <div class="question-image">
+                                        <img src="${question.question_image_url}" alt="Question Image">
+                                    </div>
+                                ` : ''}
+                                <div class="options-review">
+                                    ${question.options.map((option, i) => {
+                                        let optionClass = '';
+                                        if (i === correctAnswer) optionClass = 'correct-answer';
+                                        if (i === studentAnswer && !isCorrect) optionClass = 'wrong-answer';
+                                        
+                                        return `
+                                            <div class="option-review ${optionClass}">
+                                                ${i === studentAnswer ? '<span class="your-answer">Your Answer:</span>' : ''}
+                                                ${i === correctAnswer ? '<span class="correct-label">Correct Answer:</span>' : ''}
+                                                ${option}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                                <div class="explanation">
+                                    <strong>Explanation:</strong>
+                                    <p>${question.explanation}</p>
+                                    ${question.explanation_image_url ? `
+                                        <div class="explanation-image">
+                                            <img src="${question.explanation_image_url}" alt="Explanation Image">
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        // Load results on page load
+        loadResults();
+    </script>
+</body>
+</html>
+

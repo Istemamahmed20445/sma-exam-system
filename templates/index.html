@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shahriar's Medical Academy - Mock Exam</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo">
+                <div class="header-text">
+                    <h1>Shahriar's Medical Academy</h1>
+                    <p class="subtitle">Mock Exam System</p>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="exam-section">
+                <h2>Available Exams</h2>
+                <div id="exam-list" class="exam-list">
+                    <div class="loading">Loading exams...</div>
+                </div>
+            </div>
+
+            <div class="login-section" id="login-section" style="display: none;">
+                <h2>Enter Your Details</h2>
+                <form id="student-login-form">
+                    <input type="text" id="student-name" placeholder="Your Name" required>
+                    <input type="email" id="student-email" placeholder="Your Email" required>
+                    <button type="submit">Start Exam</button>
+                </form>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Shahriar's Medical Academy. All rights reserved.</p>
+            <a href="/admin" class="admin-link">Admin Login</a>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/firebase-config.js') }}"></script>
+    <script>
+        let currentExamId = null;
+
+        // Load exams
+        async function loadExams() {
+            try {
+                const response = await fetch('/api/exams');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayExams(data.exams);
+                } else {
+                    document.getElementById('exam-list').innerHTML = 
+                        '<div class="error">Failed to load exams. Please try again.</div>';
+                }
+            } catch (error) {
+                document.getElementById('exam-list').innerHTML = 
+                    '<div class="error">Error loading exams: ' + error.message + '</div>';
+            }
+        }
+
+        function displayExams(exams) {
+            const examList = document.getElementById('exam-list');
+            
+            if (exams.length === 0) {
+                examList.innerHTML = '<div class="no-exams">No exams available at the moment.</div>';
+                return;
+            }
+
+            examList.innerHTML = exams.map(exam => `
+                <div class="exam-card" data-exam-id="${exam.exam_id}">
+                    <h3>${exam.title}</h3>
+                    <div class="exam-info">
+                        <p><strong>Duration:</strong> ${exam.duration} minutes</p>
+                        <p><strong>Questions:</strong> ${exam.questions ? exam.questions.length : 0}</p>
+                        <p><strong>Passing Marks:</strong> ${exam.passing_marks}%</p>
+                    </div>
+                    <button class="btn-start" onclick="startExam('${exam.exam_id}')">Start Exam</button>
+                </div>
+            `).join('');
+        }
+
+        function startExam(examId) {
+            currentExamId = examId;
+            document.querySelector('.exam-section').style.display = 'none';
+            document.getElementById('login-section').style.display = 'block';
+        }
+
+        document.getElementById('student-login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const studentName = document.getElementById('student-name').value.trim();
+            const studentEmail = document.getElementById('student-email').value.trim();
+            
+            if (studentName === '') {
+                alert('Please enter your name');
+                return;
+            }
+
+            if (studentEmail === '') {
+                alert('Please enter your email');
+                return;
+            }
+
+            if (currentExamId) {
+                window.location.href = `/exam/${currentExamId}?name=${encodeURIComponent(studentName)}&email=${encodeURIComponent(studentEmail)}`;
+            }
+        });
+
+        // Load exams on page load
+        loadExams();
+    </script>
+</body>
+</html>
+

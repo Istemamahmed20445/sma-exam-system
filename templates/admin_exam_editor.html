@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Editor - Shahriar's Medical Academy</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <h1 id="editor-title">Create New Exam</h1>
+            <div class="admin-actions">
+                <button onclick="saveExam()" class="btn-primary">Save Exam</button>
+                <a href="/admin/dashboard" class="btn-secondary">Cancel</a>
+            </div>
+        </header>
+
+        <main class="admin-main">
+            <div class="exam-editor">
+                <div class="exam-settings">
+                    <h2>Exam Settings</h2>
+                    <div class="form-group">
+                        <label for="exam-title">Exam Title</label>
+                        <input type="text" id="exam-title" placeholder="e.g., Basic Medical Sciences Mock Exam" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="exam-duration">Duration (minutes)</label>
+                            <input type="number" id="exam-duration" value="60" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="passing-marks">Passing Marks (%)</label>
+                            <input type="number" id="passing-marks" value="60" min="0" max="100" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="questions-section">
+                    <div class="questions-header">
+                        <h2>Questions</h2>
+                        <button onclick="addQuestion()" class="btn-secondary">Add Question</button>
+                    </div>
+                    <div id="questions-list"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/firebase-config.js') }}"></script>
+    <script>
+        const examId = '{{ exam_id }}' || null;
+        let questions = [];
+
+        // Load exam if editing
+        if (examId) {
+            document.getElementById('editor-title').textContent = 'Edit Exam';
+            loadExam();
+        }
+
+        async function loadExam() {
+            try {
+                const response = await fetch(`/api/exam/${examId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const exam = data.exam;
+                    document.getElementById('exam-title').value = exam.title;
+                    document.getElementById('exam-duration').value = exam.duration;
+                    document.getElementById('passing-marks').value = exam.passing_marks;
+                    questions = exam.questions || [];
+                    renderQuestions();
+                }
+            } catch (error) {
+                alert('Error loading exam: ' + error.message);
+            }
+        }
+
+        function addQuestion() {
+            questions.push({
+                question_text: '',
+                question_image_url: '',
+                options: ['', '', '', ''],
+                correct_answer: 0,
+                explanation: '',
+                explanation_image_url: ''
+            });
+            renderQuestions();
+        }
+
+        function addOption(questionIndex) {
+            questions[questionIndex].options.push('');
+            renderQuestions();
+        }
+
+        function removeOption(questionIndex, optionIndex) {
+            if (questions[questionIndex].options.length > 2) {
+                questions[questionIndex].options.splice(optionIndex, 1);
+                // Adjust correct_answer if needed
+                if (questions[questionIndex].correct_answer >= questions[questionIndex].options.length) {
+                    questions[questionIndex].correct_answer = questions[questionIndex].options.length - 1;
+                }
+                renderQuestions();
+            } else {
+                alert('A question must have at least 2 options');
+            }
+        }
+
+        function removeQuestion(index) {
+            if (confirm('Are you sure you want to remove this question?')) {
+                questions.splice(index, 1);
+                renderQuestions();
+            }
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('questions-list');
+            
+            if (questions.length === 0) {
+                container.innerHTML = '<div class="no-data">No questions added yet. Click "Add Question" to start.</div>';
+                return;
+            }
+
+            container.innerHTML = questions.map((question, index) => `
+                <div class="question-editor">
+                    <div class="question-header">
+                        <h3>Question ${index + 1}</h3>
+                        <button onclick="removeQuestion(${index})" class="btn-delete-small">Remove</button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Question Text</label>
+                        <textarea class="question-text" onchange="updateQuestion(${index}, 'question_text', this.value)" 
+                            placeholder="Enter your question here...">${question.question_text}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Question Image (Optional)</label>
+                        <div class="image-upload">
+                            <input type="file" accept="image/*" onchange="uploadQuestionImage(${index}, 'question_image_url', this)">
+                            ${question.question_image_url ? `
+                                <div class="image-preview">
+                                    <img src="${question.question_image_url}" alt="Question Image">
+                                    <button onclick="removeImage(${index}, 'question_image_url')" class="btn-delete-small">Remove</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <label>Options</label>
+                            <button type="button" onclick="addOption(${index})" class="btn-secondary" style="padding: 6px 12px; font-size: 0.875rem;">+ Add Option</button>
+                        </div>
+                        ${question.options.map((option, i) => `
+                            <div class="option-row">
+                                <input type="radio" name="correct-${index}" value="${i}" ${question.correct_answer === i ? 'checked' : ''} 
+                                    onchange="updateQuestion(${index}, 'correct_answer', ${i})">
+                                <input type="text" value="${option}" placeholder="Option ${i + 1}" 
+                                    onchange="updateOption(${index}, ${i}, this.value)">
+                                ${question.options.length > 2 ? `
+                                    <button type="button" onclick="removeOption(${index}, ${i})" class="btn-delete-small" style="padding: 4px 8px;">×</button>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="form-group">
+                        <label>Explanation</label>
+                        <textarea class="explanation-text" onchange="updateQuestion(${index}, 'explanation', this.value)" 
+                            placeholder="Explain why this answer is correct...">${question.explanation}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Explanation Image (Optional)</label>
+                        <div class="image-upload">
+                            <input type="file" accept="image/*" onchange="uploadQuestionImage(${index}, 'explanation_image_url', this)">
+                            ${question.explanation_image_url ? `
+                                <div class="image-preview">
+                                    <img src="${question.explanation_image_url}" alt="Explanation Image">
+                                    <button onclick="removeImage(${index}, 'explanation_image_url')" class="btn-delete-small">Remove</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateQuestion(index, field, value) {
+            questions[index][field] = value;
+        }
+
+        function updateOption(index, optionIndex, value) {
+            questions[index].options[optionIndex] = value;
+        }
+
+        async function uploadQuestionImage(index, field, input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    questions[index][field] = data.url;
+                    renderQuestions();
+                } else {
+                    alert('Failed to upload image: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error uploading image: ' + error.message);
+            }
+        }
+
+        function removeImage(index, field) {
+            questions[index][field] = '';
+            renderQuestions();
+        }
+
+        async function saveExam() {
+            const title = document.getElementById('exam-title').value.trim();
+            const duration = parseInt(document.getElementById('exam-duration').value);
+            const passingMarks = parseInt(document.getElementById('passing-marks').value);
+
+            if (!title) {
+                alert('Please enter an exam title');
+                return;
+            }
+
+            if (questions.length === 0) {
+                alert('Please add at least one question');
+                return;
+            }
+
+            // Validate questions
+            for (let i = 0; i < questions.length; i++) {
+                const q = questions[i];
+                if (!q.question_text.trim()) {
+                    alert(`Question ${i + 1}: Please enter question text`);
+                    return;
+                }
+                if (q.options.some(opt => !opt.trim())) {
+                    alert(`Question ${i + 1}: Please fill all options`);
+                    return;
+                }
+                if (!q.explanation.trim()) {
+                    alert(`Question ${i + 1}: Please enter an explanation`);
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch('/api/exam/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        exam_id: examId,
+                        title,
+                        duration,
+                        passing_marks: passingMarks,
+                        questions
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Exam saved successfully!');
+                    window.location.href = '/admin/dashboard';
+                } else {
+                    alert('Failed to save exam: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error saving exam: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
+

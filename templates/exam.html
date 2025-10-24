@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam - Shahriar's Medical Academy</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/exam.css') }}">
+</head>
+<body>
+    <div class="exam-container">
+        <header class="exam-header">
+            <div class="exam-info">
+                <h1 id="exam-title">Loading...</h1>
+                <p id="student-name"></p>
+            </div>
+            <div class="timer">
+                <span class="timer-label">Time Remaining:</span>
+                <span id="timer-display">00:00</span>
+            </div>
+        </header>
+
+        <div class="exam-body">
+            <div class="question-section">
+                <div class="question-number">
+                    Question <span id="current-question-num">1</span> of <span id="total-questions">0</span>
+                </div>
+
+                <div class="question-content">
+                    <div id="question-text"></div>
+                    <div id="question-image-container" style="display: none;">
+                        <img id="question-image" src="" alt="Question Image">
+                    </div>
+                </div>
+
+                <div class="options-container" id="options-container">
+                    <!-- Options will be dynamically generated -->
+                </div>
+
+                <div class="navigation-buttons">
+                    <button id="prev-btn" onclick="previousQuestion()" disabled>Previous</button>
+                    <button id="next-btn" onclick="nextQuestion()">Next</button>
+                    <button id="submit-btn" onclick="confirmSubmit()" style="display: none;">Submit Exam</button>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="question-palette">
+                    <h3>Questions</h3>
+                    <div id="question-palette-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Confirmation Modal -->
+    <div id="submit-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Submit Exam?</h2>
+            <p>Are you sure you want to submit your exam? You cannot change your answers after submission.</p>
+            <div class="modal-buttons">
+                <button onclick="closeModal()">Cancel</button>
+                <button onclick="submitExam()" class="btn-danger">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/firebase-config.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/student.js') }}"></script>
+    <script>
+        // Get exam ID and student details from URL
+        const examId = '{{ exam_id }}';
+        const urlParams = new URLSearchParams(window.location.search);
+        const studentName = urlParams.get('name') || 'Student';
+        const studentEmail = urlParams.get('email') || '';
+
+        document.getElementById('student-name').textContent = studentName;
+        if (studentEmail) {
+            document.getElementById('student-name').textContent += ` (${studentEmail})`;
+        }
+
+        // Initialize exam
+        let examData = null;
+        let currentQuestionIndex = 0;
+        let answers = [];
+        let timerInterval = null;
+        let timeRemaining = 0;
+
+        async function loadExam() {
+            try {
+                const response = await fetch(`/api/exam/${examId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    examData = data.exam;
+                    initializeExam(data.exam);
+                } else {
+                    alert('Failed to load exam. Please try again.');
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                alert('Error loading exam: ' + error.message);
+                window.location.href = '/';
+            }
+        }
+
+        function initializeExam(exam) {
+            document.getElementById('exam-title').textContent = exam.title;
+            document.getElementById('total-questions').textContent = exam.questions.length;
+            
+            // Initialize answers array
+            answers = new Array(exam.questions.length).fill(null);
+            
+            // Set timer
+            timeRemaining = exam.duration * 60; // Convert minutes to seconds
+            startTimer();
+            
+            // Display first question
+            displayQuestion(0);
+            
+            // Create question palette
+            createQuestionPalette(exam.questions.length);
+        }
+
+        function displayQuestion(index) {
+            currentQuestionIndex = index;
+            const question = examData.questions[index];
+            
+            // Update question number
+            document.getElementById('current-question-num').textContent = index + 1;
+            
+            // Display question text
+            document.getElementById('question-text').textContent = question.question_text;
+            
+            // Display question image if available
+            const imageContainer = document.getElementById('question-image-container');
+            if (question.question_image_url) {
+                document.getElementById('question-image').src = question.question_image_url;
+                imageContainer.style.display = 'block';
+            } else {
+                imageContainer.style.display = 'none';
+            }
+            
+            // Display options
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = question.options.map((option, i) => `
+                <label class="option-label">
+                    <input type="radio" name="answer" value="${i}" ${answers[index] === i ? 'checked' : ''}>
+                    <span>${option}</span>
+                </label>
+            `).join('');
+            
+            // Update navigation buttons
+            document.getElementById('prev-btn').disabled = index === 0;
+            document.getElementById('next-btn').style.display = index === examData.questions.length - 1 ? 'none' : 'inline-block';
+            document.getElementById('submit-btn').style.display = index === examData.questions.length - 1 ? 'inline-block' : 'none';
+            
+            // Update palette
+            updateQuestionPalette();
+        }
+
+        function createQuestionPalette(totalQuestions) {
+            const paletteGrid = document.getElementById('question-palette-grid');
+            paletteGrid.innerHTML = '';
+            
+            for (let i = 0; i < totalQuestions; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'palette-btn';
+                btn.textContent = i + 1;
+                btn.onclick = () => {
+                    saveCurrentAnswer();
+                    displayQuestion(i);
+                };
+                paletteGrid.appendChild(btn);
+            }
+        }
+
+        function updateQuestionPalette() {
+            const buttons = document.querySelectorAll('.palette-btn');
+            buttons.forEach((btn, i) => {
+                btn.classList.remove('current', 'answered');
+                if (i === currentQuestionIndex) {
+                    btn.classList.add('current');
+                }
+                if (answers[i] !== null) {
+                    btn.classList.add('answered');
+                }
+            });
+        }
+
+        function previousQuestion() {
+            saveCurrentAnswer();
+            if (currentQuestionIndex > 0) {
+                displayQuestion(currentQuestionIndex - 1);
+            }
+        }
+
+        function nextQuestion() {
+            saveCurrentAnswer();
+            if (currentQuestionIndex < examData.questions.length - 1) {
+                displayQuestion(currentQuestionIndex + 1);
+            }
+        }
+
+        function saveCurrentAnswer() {
+            const selectedOption = document.querySelector('input[name="answer"]:checked');
+            if (selectedOption) {
+                answers[currentQuestionIndex] = parseInt(selectedOption.value);
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateTimerDisplay();
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    alert('Time is up! Your exam will be submitted automatically.');
+                    submitExam();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            document.getElementById('timer-display').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Change color when time is running out
+            const timerDisplay = document.getElementById('timer-display');
+            if (timeRemaining <= 60) {
+                timerDisplay.classList.add('warning');
+            } else {
+                timerDisplay.classList.remove('warning');
+            }
+        }
+
+        function confirmSubmit() {
+            saveCurrentAnswer();
+            document.getElementById('submit-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('submit-modal').style.display = 'none';
+        }
+
+        async function submitExam() {
+            clearInterval(timerInterval);
+            
+            try {
+                const response = await fetch('/api/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        exam_id: examId,
+                        student_name: studentName,
+                        student_email: studentEmail,
+                        answers: answers
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.href = `/results/${data.result_id}`;
+                } else {
+                    alert('Failed to submit exam: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error submitting exam: ' + error.message);
+            }
+        }
+
+        // Load exam on page load
+        loadExam();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Shahriar's Medical Academy</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <h1>Admin Dashboard</h1>
+            <div class="admin-actions">
+                <a href="/admin/exam/create" class="btn-primary">Create New Exam</a>
+                <a href="/admin/logout" class="btn-secondary">Logout</a>
+            </div>
+        </header>
+
+        <main class="admin-main">
+            <div class="admin-section">
+                <h2>Exams</h2>
+                <div id="exams-list" class="cards-container">
+                    <div class="loading">Loading exams...</div>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h2>Student Results</h2>
+                <div class="results-header">
+                    <button onclick="refreshResults()" class="btn-secondary">Refresh</button>
+                    <button onclick="exportResults()" class="btn-secondary">Export CSV</button>
+                </div>
+                <div id="results-list" class="results-container">
+                    <div class="loading">Loading results...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/firebase-config.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+    <script>
+        async function loadExams() {
+            try {
+                const response = await fetch('/api/exams');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayExams(data.exams);
+                } else {
+                    document.getElementById('exams-list').innerHTML = 
+                        '<div class="error">Failed to load exams.</div>';
+                }
+            } catch (error) {
+                document.getElementById('exams-list').innerHTML = 
+                    '<div class="error">Error loading exams.</div>';
+            }
+        }
+
+        function displayExams(exams) {
+            const container = document.getElementById('exams-list');
+            
+            if (exams.length === 0) {
+                container.innerHTML = '<div class="no-data">No exams created yet.</div>';
+                return;
+            }
+
+            container.innerHTML = exams.map(exam => `
+                <div class="card">
+                    <h3>${exam.title}</h3>
+                    <div class="card-info">
+                        <p><strong>Duration:</strong> ${exam.duration} minutes</p>
+                        <p><strong>Questions:</strong> ${exam.questions ? exam.questions.length : 0}</p>
+                        <p><strong>Passing Marks:</strong> ${exam.passing_marks}%</p>
+                    </div>
+                    <div class="card-actions">
+                        <a href="/admin/exam/edit/${exam.exam_id}" class="btn-edit">Edit</a>
+                        <button onclick="deleteExam('${exam.exam_id}')" class="btn-delete">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function deleteExam(examId) {
+            if (!confirm('Are you sure you want to delete this exam?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/exam/delete/${examId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadExams();
+                } else {
+                    alert('Failed to delete exam: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error deleting exam: ' + error.message);
+            }
+        }
+
+        async function loadResults() {
+            try {
+                const response = await fetch('/api/results');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data.results);
+                } else {
+                    document.getElementById('results-list').innerHTML = 
+                        '<div class="error">Failed to load results.</div>';
+                }
+            } catch (error) {
+                document.getElementById('results-list').innerHTML = 
+                    '<div class="error">Error loading results.</div>';
+            }
+        }
+
+        function displayResults(results) {
+            const container = document.getElementById('results-list');
+            
+            if (results.length === 0) {
+                container.innerHTML = '<div class="no-data">no results yet.</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Exam</th>
+                            <th>Score</th>
+                            <th>Percentage</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${results.map(result => `
+                            <tr>
+                                <td>${result.student_name}${result.student_email ? `<br><small>${result.student_email}</small>` : ''}</td>
+                                <td>${result.exam_title}</td>
+                                <td>${result.score}/${result.total_questions}</td>
+                                <td>${result.percentage}%</td>
+                                <td>${new Date(result.submitted_at).toLocaleString()}</td>
+                                <td>
+                                    <button onclick="deleteResult('${result.result_id}')" class="btn-delete-small">Delete</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function deleteResult(resultId) {
+            if (!confirm('Are you sure you want to delete this result?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/result/delete/${resultId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadResults();
+                } else {
+                    alert('Failed to delete result: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error deleting result: ' + error.message);
+            }
+        }
+
+        function refreshResults() {
+            loadResults();
+        }
+
+        function exportResults() {
+            alert('CSV export functionality coming soon!');
+        }
+
+        // Load data on page load
+        loadExams();
+        loadResults();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,343 @@
+/* Admin Panel Styles */
+
+.admin-container {
+    min-height: 100vh;
+    background-color: var(--bg-color);
+}
+
+.admin-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    color: white;
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.admin-header h1 {
+    font-size: 1.8rem;
+}
+
+.admin-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.admin-main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 30px;
+}
+
+.admin-section {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+.admin-section h2 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+}
+
+/* Login Page */
+.login-container {
+    max-width: 450px;
+    margin: 100px auto;
+    background: white;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.login-form h2 {
+    color: var(--primary-color);
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 5px;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.back-link {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 12px;
+    border-radius: 5px;
+    margin-top: 15px;
+    border: 1px solid #f5c6cb;
+}
+
+/* Cards Container */
+.cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card h3 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.card-info {
+    margin-bottom: 15px;
+}
+
+.card-info p {
+    margin: 8px 0;
+    color: var(--text-light);
+    font-size: 0.95rem;
+}
+
+.card-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.card-actions a,
+.card-actions button {
+    flex: 1;
+}
+
+/* Results Table */
+.results-header {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.results-table th,
+.results-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.results-table td small {
+    display: block;
+    color: var(--text-light);
+    font-size: 0.85rem;
+    margin-top: 4px;
+}
+
+.results-table th {
+    background: var(--secondary-color);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.results-table tr:hover {
+    background: #f8f9fa;
+}
+
+/* Exam Editor */
+.exam-editor {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.exam-settings {
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.exam-settings h2 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+.questions-section h2 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+.questions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.question-editor {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    border: 1px solid var(--border-color);
+}
+
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.question-header h3 {
+    color: var(--primary-color);
+    font-size: 1.2rem;
+}
+
+.question-text,
+.explanation-text {
+    min-height: 80px;
+    font-family: inherit;
+}
+
+.image-upload {
+    margin-top: 10px;
+}
+
+.image-preview {
+    margin-top: 10px;
+    text-align: center;
+}
+
+.image-preview img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.image-preview button {
+    margin-top: 10px;
+}
+
+.option-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.option-row input[type="radio"] {
+    width: auto;
+    cursor: pointer;
+}
+
+.option-row input[type="text"] {
+    flex: 1;
+}
+
+.option-row button {
+    flex-shrink: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .admin-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .admin-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .admin-actions a,
+    .admin-actions button {
+        width: 100%;
+    }
+
+    .admin-main {
+        padding: 15px;
+    }
+
+    .cards-container {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .results-table {
+        font-size: 0.9rem;
+    }
+
+    .results-table th,
+    .results-table td {
+        padding: 8px;
+    }
+}
+
