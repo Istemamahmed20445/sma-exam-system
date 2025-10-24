@@ -1,0 +1,27 @@
+========================================
+ENVIRONMENT VARIABLES FOR RENDER
+========================================
+
+Add these 3 variables in Render Dashboard:
+
+----------------------------------------
+1. ADMIN_PASSWORD
+   Value: Admin@2024Secure!
+
+----------------------------------------
+2. FLASK_ENV
+   Value: production
+
+----------------------------------------
+3. FIREBASE_CONFIG
+   Value: [Copy entire content from firebase_config.json file]
+   
+   Steps:
+   1. Open firebase_config.json file
+   2. Copy everything from { to }
+   3. Paste it here
+
+----------------------------------------
+
+DONE!
+
