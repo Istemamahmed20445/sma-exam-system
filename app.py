@@ -159,6 +159,10 @@ def save_exam():
             'updated_at': firestore.SERVER_TIMESTAMP
         }
         
+        # Add thumbnail URL if provided
+        if data.get('thumbnail_url'):
+            exam_data['thumbnail_url'] = data.get('thumbnail_url')
+        
         if exam_id:
             # Update existing exam
             db.collection('exams').document(exam_id).update(exam_data)

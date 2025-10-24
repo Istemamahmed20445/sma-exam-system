@@ -75,6 +75,7 @@
 
             examList.innerHTML = exams.map(exam => `
                 <div class="exam-card" data-exam-id="${exam.exam_id}">
+                    ${exam.thumbnail_url ? `<div class="exam-thumbnail"><img src="${exam.thumbnail_url}" alt="${exam.title}"></div>` : ''}
                     <h3>${exam.title}</h3>
                     <div class="exam-info">
                         <p><strong>Duration:</strong> ${exam.duration} minutes</p>

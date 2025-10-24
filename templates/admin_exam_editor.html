@@ -26,6 +26,13 @@
                         <label for="exam-title">Exam Title</label>
                         <input type="text" id="exam-title" placeholder="e.g., Basic Medical Sciences Mock Exam" required>
                     </div>
+                    <div class="form-group">
+                        <label for="exam-thumbnail">Thumbnail Image (Optional)</label>
+                        <input type="file" id="exam-thumbnail" accept="image/*" onchange="previewThumbnail(event)">
+                        <div id="thumbnail-preview" style="margin-top: 10px;"></div>
+                        <button type="button" onclick="uploadThumbnail()" class="btn-secondary" style="margin-top: 10px;">Upload Thumbnail</button>
+                        <input type="hidden" id="thumbnail-url">
+                    </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="exam-duration">Duration (minutes)</label>
@@ -70,11 +77,60 @@
                     document.getElementById('exam-title').value = exam.title;
                     document.getElementById('exam-duration').value = exam.duration;
                     document.getElementById('passing-marks').value = exam.passing_marks;
+                    if (exam.thumbnail_url) {
+                        document.getElementById('thumbnail-url').value = exam.thumbnail_url;
+                        document.getElementById('thumbnail-preview').innerHTML = 
+                            `<img src="${exam.thumbnail_url}" style="max-width: 200px; max-height: 150px; border-radius: 5px;">`;
+                    }
                     questions = exam.questions || [];
                     renderQuestions();
                 }
             } catch (error) {
                 alert('Error loading exam: ' + error.message);
+            }
+        }
+
+        function previewThumbnail(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('thumbnail-preview').innerHTML = 
+                        `<img src="${e.target.result}" style="max-width: 200px; max-height: 150px; border-radius: 5px;">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function uploadThumbnail() {
+            const fileInput = document.getElementById('exam-thumbnail');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select an image file first');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('type', 'thumbnail');
+
+            try {
+                const response = await fetch('/api/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('thumbnail-url').value = data.url;
+                    alert('Thumbnail uploaded successfully!');
+                } else {
+                    alert('Failed to upload thumbnail: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error uploading thumbnail: ' + error.message);
             }
         }
 
@@ -261,6 +317,7 @@
             }
 
             try {
+                const thumbnailUrl = document.getElementById('thumbnail-url').value;
                 const response = await fetch('/api/exam/save', {
                     method: 'POST',
                     headers: {
@@ -271,6 +328,7 @@
                         title,
                         duration,
                         passing_marks: passingMarks,
+                        thumbnail_url: thumbnailUrl,
                         questions
                     })
                 });
