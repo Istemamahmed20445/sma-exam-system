@@ -30,6 +30,9 @@
             <div class="admin-section">
                 <h2>Student Results</h2>
                 <div class="results-header">
+                    <select id="exam-filter" onchange="filterResults()" class="form-group select" style="margin-right: 10px;">
+                        <option value="">All Exams</option>
+                    </select>
                     <button onclick="refreshResults()" class="btn-secondary">Refresh</button>
                     <button onclick="openImportResults()" class="btn-secondary">Import CSV</button>
                     <button onclick="exportResults()" class="btn-secondary">Export CSV</button>
@@ -107,13 +110,17 @@
             }
         }
 
+        let allResults = [];
+
         async function loadResults() {
             try {
                 const response = await fetch('/api/results');
                 const data = await response.json();
                 
                 if (data.success) {
-                    displayResults(data.results);
+                    allResults = data.results;
+                    populateExamFilter();
+                    displayResults(allResults);
                 } else {
                     document.getElementById('results-list').innerHTML = 
                         '<div class="error">Failed to load results.</div>';
@@ -124,11 +131,32 @@
             }
         }
 
+        function populateExamFilter() {
+            const examFilter = document.getElementById('exam-filter');
+            const examTitles = [...new Set(allResults.map(r => r.exam_title))].sort();
+            
+            examFilter.innerHTML = '<option value="">All Exams</option>';
+            examTitles.forEach(title => {
+                examFilter.innerHTML += `<option value="${title}">${title}</option>`;
+            });
+        }
+
+        function filterResults() {
+            const selectedExam = document.getElementById('exam-filter').value;
+            
+            if (selectedExam === '') {
+                displayResults(allResults);
+            } else {
+                const filtered = allResults.filter(r => r.exam_title === selectedExam);
+                displayResults(filtered);
+            }
+        }
+
         function displayResults(results) {
             const container = document.getElementById('results-list');
             
             if (results.length === 0) {
-                container.innerHTML = '<div class="no-data">no results yet.</div>';
+                container.innerHTML = '<div class="no-data">No results found.</div>';
                 return;
             }
 
@@ -190,7 +218,45 @@
         }
 
         function exportResults() {
-            alert('CSV export functionality coming soon!');
+            const selectedExam = document.getElementById('exam-filter').value;
+            let resultsToExport = selectedExam === '' ? allResults : allResults.filter(r => r.exam_title === selectedExam);
+            
+            if (resultsToExport.length === 0) {
+                alert('No results to export');
+                return;
+            }
+            
+            // Create CSV content
+            const headers = ['Student Name', 'Email', 'Exam Title', 'Score', 'Total Questions', 'Percentage', 'Submitted At'];
+            const rows = resultsToExport.map(result => [
+                result.student_name,
+                result.student_email || '',
+                result.exam_title,
+                result.score,
+                result.total_questions,
+                result.percentage,
+                new Date(result.submitted_at).toISOString()
+            ]);
+            
+            // Combine headers and rows
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+            ].join('\n');
+            
+            // Create download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            
+            const filename = selectedExam 
+                ? `results_${selectedExam.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`
+                : `results_all_${new Date().toISOString().split('T')[0]}.csv`;
+            
+            link.download = filename;
+            link.click();
+            window.URL.revokeObjectURL(url);
         }
 
         // Bulk Upload Functions
