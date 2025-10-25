@@ -419,11 +419,6 @@
                             }).join('')}
                         </div>
                     </div>
-                    
-                    <div class="results-actions">
-                        <button onclick="location.href='/'" class="btn-primary">Take Another Exam</button>
-                        <button onclick="window.print()" class="btn-secondary">Print Results</button>
-                    </div>
                 </div>
             `;
         }
@@ -457,11 +452,6 @@
                             <p><strong>Passing Marks:</strong> ${examData ? examData.passing_marks : 50}%</p>
                             <p><strong>Time Taken:</strong> ${formatTime(submitData.time_taken || 0)}</p>
                         </div>
-                    </div>
-                    
-                    <div class="results-actions">
-                        <button onclick="location.href='/'" class="btn-primary">Take Another Exam</button>
-                        <button onclick="window.print()" class="btn-secondary">Print Results</button>
                     </div>
                 </div>
             `;
