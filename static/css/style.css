@@ -502,6 +502,50 @@ footer {
     margin-bottom: 20px;
 }
 
+/* Exam Section Header */
+.exam-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.exam-section-header h2 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.btn-refresh {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-refresh:hover {
+    background: #1e3a8a;
+    border-color: #1e3a8a;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(30, 58, 138, 0.3);
+}
+
+.refresh-icon {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+.btn-refresh:hover .refresh-icon {
+    transform: rotate(180deg);
+}
+
 /* Enhanced Responsive Design */
 @media (max-width: 768px) {
     .container {
@@ -540,8 +584,12 @@ footer {
         padding: 25px;
     }
 
-    .exam-section h2 {
+    .exam-section-header h2 {
         font-size: 1.6rem;
+    }
+    
+    .btn-refresh {
+        padding: 10px 12px;
     }
 
     .login-section {

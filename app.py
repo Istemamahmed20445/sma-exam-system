@@ -117,8 +117,10 @@ def get_exams():
             exam_data['exam_id'] = exam.id
             exams_list.append(exam_data)
         
+        print(f"Found {len(exams_list)} exams: {[exam['title'] for exam in exams_list]}")
         return jsonify({'success': True, 'exams': exams_list})
     except Exception as e:
+        print(f"Error loading exams: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/exam/<exam_id>', methods=['GET'])

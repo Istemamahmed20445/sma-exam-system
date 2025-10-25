@@ -22,7 +22,12 @@
 
         <main>
             <div class="exam-section fade-in">
-                <h2>Available Exams</h2>
+                <div class="exam-section-header">
+                    <h2>Available Exams</h2>
+                    <button onclick="loadExams()" class="btn-refresh" title="Refresh exam list">
+                        <span class="refresh-icon">🔄</span>
+                    </button>
+                </div>
                 <div id="exam-list" class="exam-list">
                     <div class="loading">Loading exams...</div>
                 </div>
@@ -50,6 +55,9 @@
         // Load exams
         async function loadExams() {
             try {
+                // Show loading state
+                document.getElementById('exam-list').innerHTML = '<div class="loading">Loading exams...</div>';
+                
                 const response = await fetch('/api/exams');
                 const data = await response.json();
                 
