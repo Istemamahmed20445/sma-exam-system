@@ -298,7 +298,11 @@
                     console.log('Results data:', resultsData);
                     
                     if (resultsData.success) {
-                        showResults(resultsData.result, resultsData.exam);
+                        // The exam data is nested in result.exam
+                        const exam = resultsData.result.exam;
+                        console.log('Exam data structure:', exam);
+                        console.log('Result data structure:', resultsData.result);
+                        showResults(resultsData.result, exam);
                     } else {
                         console.error('Failed to load results:', resultsData);
                         // Fallback: show basic results without detailed review
@@ -336,6 +340,19 @@
         }
 
         function showResults(result, exam) {
+            // Safety checks
+            if (!result || !exam) {
+                console.error('Missing result or exam data:', { result, exam });
+                showError('Unable to display results - missing data');
+                return;
+            }
+            
+            if (!exam.questions || !Array.isArray(exam.questions)) {
+                console.error('Invalid exam questions data:', exam.questions);
+                showError('Unable to display results - invalid exam data');
+                return;
+            }
+            
             const percentage = Math.round((result.score / exam.questions.length) * 100);
             const passed = percentage >= exam.passing_marks;
             
