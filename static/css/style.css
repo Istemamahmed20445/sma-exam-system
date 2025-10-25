@@ -345,12 +345,12 @@ button:hover::before, .btn-primary:hover::before, .btn-secondary:hover::before, 
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    flex: 1;
     font-weight: 600;
     transition: all 0.3s ease;
     min-height: 48px;
-    padding: 14px 20px;
+    padding: 0;
+    width: 50px;
+    aspect-ratio: 1;
 }
 
 .btn-copy-link:hover {
@@ -361,7 +361,8 @@ button:hover::before, .btn-primary:hover::before, .btn-secondary:hover::before, 
 }
 
 .copy-icon {
-    font-size: 1.1rem;
+    font-size: 1.5rem;
+    line-height: 1;
 }
 
 /* Enhanced Login Section */
@@ -542,16 +543,18 @@ footer {
     }
 
     .exam-actions {
-        flex-direction: column;
+        flex-direction: row;
         gap: 10px;
     }
 
     .btn-start {
         margin-top: 0;
+        flex: 1;
     }
 
     .btn-copy-link {
         margin-top: 0;
+        width: 48px;
     }
 }
 

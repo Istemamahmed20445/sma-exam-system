@@ -88,7 +88,7 @@
                     <div class="exam-actions">
                         <button class="btn-start" onclick="startExam('${exam.exam_id}')">Start Exam</button>
                         <button class="btn-copy-link" onclick="copyExamLink('${exam.exam_id}', event)" title="Copy exam link">
-                            <span class="copy-icon">🔗</span> Copy Link
+                            <span class="copy-icon">📋</span>
                         </button>
                     </div>
                 </div>
@@ -123,7 +123,7 @@
                 console.log('Successfully copied to clipboard');
                 // Show success message
                 const originalText = button.innerHTML;
-                button.innerHTML = '<span class="copy-icon">✓</span> Copied!';
+                button.innerHTML = '<span class="copy-icon">✓</span>';
                 button.style.backgroundColor = '#28a745';
                 
                 // Reset after 2 seconds
