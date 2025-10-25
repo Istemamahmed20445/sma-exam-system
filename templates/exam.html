@@ -252,18 +252,31 @@
 
         function confirmSubmit() {
             saveCurrentAnswer();
-            document.getElementById('submit-modal').style.display = 'flex';
+            const modal = document.getElementById('submit-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.style.visibility = 'visible';
+                modal.style.opacity = '1';
+            }
         }
 
         function closeModal() {
-            document.getElementById('submit-modal').style.display = 'none';
+            const modal = document.getElementById('submit-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
         }
 
         async function submitExam() {
             clearInterval(timerInterval);
             
-            // Close the submit modal
-            closeModal();
+            // Close the submit modal immediately and forcefully
+            const modal = document.getElementById('submit-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.style.visibility = 'hidden';
+                modal.style.opacity = '0';
+            }
             
             // Show loading state
             showLoadingState();
