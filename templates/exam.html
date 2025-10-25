@@ -115,6 +115,8 @@
             
             // Set timer
             timeRemaining = exam.duration * 60; // Convert minutes to seconds
+            console.log('Exam duration:', exam.duration, 'minutes =', timeRemaining, 'seconds');
+            updateTimerDisplay(); // Update display immediately
             startTimer();
             
             // Display first question
@@ -212,8 +214,10 @@
         }
 
         function startTimer() {
+            console.log('Starting timer with:', timeRemaining, 'seconds');
             timerInterval = setInterval(() => {
                 timeRemaining--;
+                console.log('Timer tick:', timeRemaining);
                 updateTimerDisplay();
                 
                 if (timeRemaining <= 0) {
@@ -227,15 +231,22 @@
         function updateTimerDisplay() {
             const minutes = Math.floor(timeRemaining / 60);
             const seconds = timeRemaining % 60;
-            document.getElementById('timer-display').textContent = 
-                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            const displayText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             
-            // Change color when time is running out
-            const timerDisplay = document.getElementById('timer-display');
-            if (timeRemaining <= 60) {
-                timerDisplay.classList.add('warning');
+            console.log('Updating timer display:', displayText);
+            const timerElement = document.getElementById('timer-display');
+            
+            if (timerElement) {
+                timerElement.textContent = displayText;
+                
+                // Change color when time is running out
+                if (timeRemaining <= 60) {
+                    timerElement.classList.add('warning');
+                } else {
+                    timerElement.classList.remove('warning');
+                }
             } else {
-                timerDisplay.classList.remove('warning');
+                console.error('Timer display element not found!');
             }
         }
 
@@ -279,6 +290,16 @@
 
         // Load exam on page load
         loadExam();
+        
+        // Fallback timer initialization (in case exam loading fails)
+        setTimeout(() => {
+            if (!timerInterval && timeRemaining === 0) {
+                console.log('Fallback timer initialization');
+                timeRemaining = 30 * 60; // 30 minutes fallback
+                updateTimerDisplay();
+                startTimer();
+            }
+        }, 2000);
     </script>
 </body>
 </html>
