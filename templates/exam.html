@@ -262,6 +262,9 @@
         async function submitExam() {
             clearInterval(timerInterval);
             
+            // Close the submit modal
+            closeModal();
+            
             // Show loading state
             showLoadingState();
             
