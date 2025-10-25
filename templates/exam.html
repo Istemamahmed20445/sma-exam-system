@@ -262,6 +262,9 @@
         async function submitExam() {
             clearInterval(timerInterval);
             
+            // Show loading state
+            showLoadingState();
+            
             try {
                 const response = await fetch('/api/submit', {
                     method: 'POST',
@@ -279,13 +282,108 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    window.location.href = `/results/${data.result_id}`;
+                    // Fetch detailed results
+                    const resultsResponse = await fetch(`/api/results/${data.result_id}`);
+                    const resultsData = await resultsResponse.json();
+                    
+                    if (resultsData.success) {
+                        showResults(resultsData.result, resultsData.exam);
+                    } else {
+                        showError('Failed to load results');
+                    }
                 } else {
-                    alert('Failed to submit exam: ' + data.error);
+                    showError('Failed to submit exam: ' + data.error);
                 }
             } catch (error) {
-                alert('Error submitting exam: ' + error.message);
+                showError('Error submitting exam: ' + error.message);
             }
+        }
+
+        function showLoadingState() {
+            document.querySelector('.exam-body').innerHTML = `
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <h2>Submitting your exam...</h2>
+                    <p>Please wait while we calculate your results.</p>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            document.querySelector('.exam-body').innerHTML = `
+                <div class="error-container">
+                    <div class="error-icon">⚠️</div>
+                    <h2>Submission Error</h2>
+                    <p>${message}</p>
+                    <button onclick="location.reload()" class="btn-primary">Try Again</button>
+                </div>
+            `;
+        }
+
+        function showResults(result, exam) {
+            const percentage = Math.round((result.score / exam.questions.length) * 100);
+            const passed = percentage >= exam.passing_marks;
+            
+            document.querySelector('.exam-body').innerHTML = `
+                <div class="results-container">
+                    <div class="results-header">
+                        <h1>🎉 Exam Completed!</h1>
+                        <p>Thank you for taking the exam, ${result.student_name}!</p>
+                    </div>
+                    
+                    <div class="score-card ${passed ? 'passed' : 'failed'}">
+                        <div class="score-circle">
+                            <div class="score-percentage">${percentage}%</div>
+                            <div class="score-label">Your Score</div>
+                        </div>
+                        <div class="score-details">
+                            <h3>${passed ? '🎉 Congratulations!' : '📚 Keep Studying!'}</h3>
+                            <p><strong>Status:</strong> ${passed ? 'PASSED' : 'FAILED'}</p>
+                            <p><strong>Correct Answers:</strong> ${result.score}/${exam.questions.length}</p>
+                            <p><strong>Passing Marks:</strong> ${exam.passing_marks}%</p>
+                            <p><strong>Time Taken:</strong> ${formatTime(result.time_taken)}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="question-review">
+                        <h3>📋 Question Review</h3>
+                        <div class="questions-list">
+                            ${exam.questions.map((question, index) => {
+                                const userAnswer = result.answers[index];
+                                const isCorrect = userAnswer === question.correct_answer;
+                                return `
+                                    <div class="question-item ${isCorrect ? 'correct' : 'incorrect'}">
+                                        <div class="question-header">
+                                            <span class="question-number">Q${index + 1}</span>
+                                            <span class="answer-status">${isCorrect ? '✓ Correct' : '✗ Incorrect'}</span>
+                                        </div>
+                                        <div class="question-text">${question.question_text}</div>
+                                        <div class="options-review">
+                                            ${question.options.map((option, optIndex) => {
+                                                let className = '';
+                                                if (optIndex === question.correct_answer) className = 'correct-answer';
+                                                if (optIndex === userAnswer && !isCorrect) className = 'wrong-answer';
+                                                return `<div class="option-review ${className}">${option}</div>`;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="results-actions">
+                        <button onclick="location.href='/'" class="btn-primary">Take Another Exam</button>
+                        <button onclick="window.print()" class="btn-secondary">Print Results</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
         }
 
         // Load exam on page load
