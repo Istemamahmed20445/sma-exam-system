@@ -6,6 +6,7 @@
     <title>Shahriar's Medical Academy - Mock Exam</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
@@ -20,14 +21,14 @@
         </header>
 
         <main>
-            <div class="exam-section">
+            <div class="exam-section fade-in">
                 <h2>Available Exams</h2>
                 <div id="exam-list" class="exam-list">
                     <div class="loading">Loading exams...</div>
                 </div>
             </div>
 
-            <div class="login-section" id="login-section" style="display: none;">
+            <div class="login-section slide-up" id="login-section" style="display: none;">
                 <h2>Enter Your Details</h2>
                 <form id="student-login-form">
                     <input type="text" id="student-name" placeholder="Your Name" required>
