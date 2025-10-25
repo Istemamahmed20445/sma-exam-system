@@ -268,6 +268,9 @@
             try {
                 console.log('Submitting exam...', { examId, studentName, studentEmail, answersCount: answers.length });
                 
+                // Calculate time taken safely
+                const timeTaken = examData ? (examData.duration * 60) - timeRemaining : 0;
+                
                 const response = await fetch('/api/submit', {
                     method: 'POST',
                     headers: {
@@ -277,7 +280,8 @@
                         exam_id: examId,
                         student_name: studentName,
                         student_email: studentEmail,
-                        answers: answers
+                        answers: answers,
+                        time_taken: timeTaken
                     })
                 });
                 
@@ -297,7 +301,8 @@
                         showResults(resultsData.result, resultsData.exam);
                     } else {
                         console.error('Failed to load results:', resultsData);
-                        showError('Failed to load results: ' + (resultsData.error || 'Unknown error'));
+                        // Fallback: show basic results without detailed review
+                        showBasicResults(data, examData);
                     }
                 } else {
                     console.error('Submit failed:', data);
@@ -394,6 +399,39 @@
             const minutes = Math.floor(seconds / 60);
             const remainingSeconds = seconds % 60;
             return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        function showBasicResults(submitData, examData) {
+            const percentage = submitData.percentage;
+            const passed = percentage >= (examData ? examData.passing_marks : 50);
+            
+            document.querySelector('.exam-body').innerHTML = `
+                <div class="results-container">
+                    <div class="results-header">
+                        <h1>🎉 Exam Completed!</h1>
+                        <p>Thank you for taking the exam, ${studentName}!</p>
+                    </div>
+                    
+                    <div class="score-card ${passed ? 'passed' : 'failed'}">
+                        <div class="score-circle">
+                            <div class="score-percentage">${percentage}%</div>
+                            <div class="score-label">Your Score</div>
+                        </div>
+                        <div class="score-details">
+                            <h3>${passed ? '🎉 Congratulations!' : '📚 Keep Studying!'}</h3>
+                            <p><strong>Status:</strong> ${passed ? 'PASSED' : 'FAILED'}</p>
+                            <p><strong>Correct Answers:</strong> ${submitData.score}/${submitData.total_questions}</p>
+                            <p><strong>Passing Marks:</strong> ${examData ? examData.passing_marks : 50}%</p>
+                            <p><strong>Time Taken:</strong> ${formatTime(submitData.time_taken || 0)}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="results-actions">
+                        <button onclick="location.href='/'" class="btn-primary">Take Another Exam</button>
+                        <button onclick="window.print()" class="btn-secondary">Print Results</button>
+                    </div>
+                </div>
+            `;
         }
 
         // Load exam on page load

@@ -193,10 +193,19 @@ def submit_exam():
     """Submit exam answers"""
     try:
         data = request.json
+        if not data:
+            return jsonify({'success': False, 'error': 'No data provided'}), 400
+            
         exam_id = data.get('exam_id')
         student_name = data.get('student_name')
         student_email = data.get('student_email', '')
         answers = data.get('answers', [])
+        time_taken = data.get('time_taken', 0)  # Add time_taken field
+        
+        if not exam_id:
+            return jsonify({'success': False, 'error': 'Exam ID is required'}), 400
+        if not student_name:
+            return jsonify({'success': False, 'error': 'Student name is required'}), 400
         
         # Get exam data
         exam_ref = db.collection('exams').document(exam_id)
@@ -207,6 +216,9 @@ def submit_exam():
         
         exam_data = exam.to_dict()
         questions = exam_data.get('questions', [])
+        
+        if not questions:
+            return jsonify({'success': False, 'error': 'Exam has no questions'}), 400
         
         # Calculate score
         score = 0
@@ -229,6 +241,7 @@ def submit_exam():
             'total_questions': total_questions,
             'percentage': round(percentage, 2),
             'answers': answers,
+            'time_taken': time_taken,  # Include time_taken
             'submitted_at': firestore.SERVER_TIMESTAMP
         }
         
@@ -240,9 +253,11 @@ def submit_exam():
             'result_id': result_id,
             'score': score,
             'total_questions': total_questions,
-            'percentage': round(percentage, 2)
+            'percentage': round(percentage, 2),
+            'time_taken': time_taken
         })
     except Exception as e:
+        print(f"Error in submit_exam: {str(e)}")  # Add logging
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/results', methods=['GET'])
