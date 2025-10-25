@@ -266,6 +266,8 @@
             showLoadingState();
             
             try {
+                console.log('Submitting exam...', { examId, studentName, studentEmail, answersCount: answers.length });
+                
                 const response = await fetch('/api/submit', {
                     method: 'POST',
                     headers: {
@@ -279,22 +281,30 @@
                     })
                 });
                 
+                console.log('Submit response status:', response.status);
                 const data = await response.json();
+                console.log('Submit response data:', data);
                 
-                if (data.success) {
+                if (data.success && data.result_id) {
+                    console.log('Fetching detailed results for:', data.result_id);
                     // Fetch detailed results
-                    const resultsResponse = await fetch(`/api/results/${data.result_id}`);
+                    const resultsResponse = await fetch(`/api/result/${data.result_id}`);
+                    console.log('Results response status:', resultsResponse.status);
                     const resultsData = await resultsResponse.json();
+                    console.log('Results data:', resultsData);
                     
                     if (resultsData.success) {
                         showResults(resultsData.result, resultsData.exam);
                     } else {
-                        showError('Failed to load results');
+                        console.error('Failed to load results:', resultsData);
+                        showError('Failed to load results: ' + (resultsData.error || 'Unknown error'));
                     }
                 } else {
-                    showError('Failed to submit exam: ' + data.error);
+                    console.error('Submit failed:', data);
+                    showError('Failed to submit exam: ' + (data.error || 'Unknown error'));
                 }
             } catch (error) {
+                console.error('Error submitting exam:', error);
                 showError('Error submitting exam: ' + error.message);
             }
         }
