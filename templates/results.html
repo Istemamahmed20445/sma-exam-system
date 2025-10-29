@@ -54,6 +54,13 @@
             const passPercentage = exam.passing_marks;
             const passed = percentage >= passPercentage;
             
+            // Debug: Log first question to check explanation data
+            if (exam.questions && exam.questions.length > 0) {
+                console.log('First question data:', exam.questions[0]);
+                console.log('Has explanation:', exam.questions[0].explanation);
+                console.log('Has explanation_image_url:', exam.questions[0].explanation_image_url);
+            }
+            
             const container = document.getElementById('results-container');
             container.innerHTML = `
                 <div class="results-summary">
@@ -112,10 +119,10 @@
                                 </div>
                                 <div class="explanation">
                                     <strong>Explanation:</strong>
-                                    <p>${question.explanation}</p>
+                                    ${question.explanation ? `<p>${question.explanation}</p>` : '<p>No explanation provided.</p>'}
                                     ${question.explanation_image_url ? `
                                         <div class="explanation-image">
-                                            <img src="${question.explanation_image_url}" alt="Explanation Image">
+                                            <img src="${question.explanation_image_url}" alt="Explanation Image" onerror="this.style.display='none'">
                                         </div>
                                     ` : ''}
                                 </div>
