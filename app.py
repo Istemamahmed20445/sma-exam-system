@@ -301,7 +301,15 @@ def get_result(result_id):
         # Get exam data
         exam_ref = db.collection('exams').document(result_data['exam_id'])
         exam = exam_ref.get()
-        result_data['exam'] = exam.to_dict()
+        exam_data = exam.to_dict()
+        
+        # Debug: Log first question to verify explanation data is present
+        if exam_data and 'questions' in exam_data and len(exam_data['questions']) > 0:
+            first_q = exam_data['questions'][0]
+            print(f"First question explanation: {first_q.get('explanation', 'MISSING')}")
+            print(f"First question explanation_image_url: {first_q.get('explanation_image_url', 'MISSING')}")
+        
+        result_data['exam'] = exam_data
         
         return jsonify({'success': True, 'result': result_data})
     except Exception as e:

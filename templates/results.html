@@ -90,6 +90,35 @@
                         const correctAnswer = question.correct_answer;
                         const isCorrect = studentAnswer === correctAnswer;
                         
+                        // Debug logging for first question
+                        if (index === 0) {
+                            console.log('Question 1 full data:', JSON.stringify(question, null, 2));
+                            console.log('Explanation value:', question.explanation);
+                            console.log('Explanation type:', typeof question.explanation);
+                            console.log('Explanation exists:', 'explanation' in question);
+                            console.log('Explanation image URL:', question.explanation_image_url);
+                        }
+                        
+                        // Safely get explanation with multiple fallbacks
+                        // Check various possible field names and handle empty strings properly
+                        let explanationText = '';
+                        if (question.explanation !== undefined && question.explanation !== null) {
+                            explanationText = String(question.explanation).trim();
+                        } else if (question.Explanation !== undefined && question.Explanation !== null) {
+                            explanationText = String(question.Explanation).trim();
+                        }
+                        
+                        // If still empty, use fallback message
+                        if (!explanationText) {
+                            explanationText = 'No explanation provided.';
+                        }
+                        
+                        // Safely get explanation image URL with multiple fallbacks
+                        const explanationImageUrl = (question.explanation_image_url && question.explanation_image_url.trim()) || 
+                                                    (question.explanationImageUrl && question.explanationImageUrl.trim()) ||
+                                                    (question.ExplanationImageUrl && question.ExplanationImageUrl.trim()) ||
+                                                    '';
+                        
                         return `
                             <div class="question-review ${isCorrect ? 'correct' : 'incorrect'}">
                                 <div class="question-header">
@@ -119,10 +148,10 @@
                                 </div>
                                 <div class="explanation">
                                     <strong>Explanation:</strong>
-                                    ${question.explanation ? `<p>${question.explanation}</p>` : '<p>No explanation provided.</p>'}
-                                    ${question.explanation_image_url ? `
+                                    <p>${explanationText}</p>
+                                    ${explanationImageUrl ? `
                                         <div class="explanation-image">
-                                            <img src="${question.explanation_image_url}" alt="Explanation Image" onerror="this.style.display='none'">
+                                            <img src="${explanationImageUrl}" alt="Explanation Image" onerror="console.error('Failed to load explanation image:', this.src); this.style.display='none';">
                                         </div>
                                     ` : ''}
                                 </div>
