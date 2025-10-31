@@ -21,6 +21,9 @@
         </header>
 
         <main>
+            <div style="margin: 12px 0;">
+                <button id="toggle-explanations-btn-top" class="btn-primary" style="display: none;" onclick="toggleExplanations()">Show Answers & Explanations</button>
+            </div>
             <div id="results-container">
                 <div class="loading">Loading results...</div>
             </div>
@@ -164,18 +167,22 @@
                 </div>
             `;
 
-            // Ensure section is hidden by default on render
+            // Ensure section is hidden by default on render and show top button
             const section = document.getElementById('explanations-section');
             if (section) section.style.display = 'none';
+            const topBtn = document.getElementById('toggle-explanations-btn-top');
+            if (topBtn) topBtn.style.display = 'inline-block';
         }
 
         function toggleExplanations() {
             const section = document.getElementById('explanations-section');
             const btn = document.getElementById('toggle-explanations-btn');
-            if (!section || !btn) return;
+            const topBtn = document.getElementById('toggle-explanations-btn-top');
+            if (!section) return;
             const isHidden = section.style.display === 'none';
             section.style.display = isHidden ? 'block' : 'none';
-            btn.textContent = isHidden ? 'Hide Answers & Explanations' : 'Show Answers & Explanations';
+            if (btn) btn.textContent = isHidden ? 'Hide Answers & Explanations' : 'Show Answers & Explanations';
+            if (topBtn) topBtn.textContent = isHidden ? 'Hide Answers & Explanations' : 'Show Answers & Explanations';
         }
 
         // Load results on page load
