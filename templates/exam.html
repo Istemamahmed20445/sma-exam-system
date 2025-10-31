@@ -392,13 +392,25 @@
                             <p><strong>Time Taken:</strong> ${formatTime(result.time_taken)}</p>
                         </div>
                     </div>
-                    
-                    <div class="question-review">
-                        <h3>📋 Question Review</h3>
+                    <div style="margin: 12px 0;">
+                        <button id="toggle-explanations-student" class="btn-primary" onclick="toggleStudentExplanations()">Hide Answers & Explanations</button>
+                    </div>
+                    <div class="question-review" id="student-explanations-section" style="display: block;">
+                        <h3>📋 Answers & Explanations</h3>
                         <div class="questions-list">
                             ${exam.questions.map((question, index) => {
                                 const userAnswer = result.answers[index];
                                 const isCorrect = userAnswer === question.correct_answer;
+                                // Safely derive explanation text and image URL
+                                let explanationText = '';
+                                if (question.explanation !== undefined && question.explanation !== null) {
+                                    explanationText = String(question.explanation).trim();
+                                } else if (question.Explanation !== undefined && question.Explanation !== null) {
+                                    explanationText = String(question.Explanation).trim();
+                                }
+                                const explanationImageUrl = (question.explanation_image_url && String(question.explanation_image_url).trim()) ||
+                                                            (question.explanationImageUrl && String(question.explanationImageUrl).trim()) ||
+                                                            (question.ExplanationImageUrl && String(question.ExplanationImageUrl).trim()) || '';
                                 return `
                                     <div class="question-item ${isCorrect ? 'correct' : 'incorrect'}">
                                         <div class="question-header">
@@ -406,6 +418,11 @@
                                             <span class="answer-status">${isCorrect ? '✓ Correct' : '✗ Incorrect'}</span>
                                         </div>
                                         <div class="question-text">${question.question_text}</div>
+                                        ${question.question_image_url ? `
+                                            <div class="question-image" style="margin: 8px 0;">
+                                                <img src="${question.question_image_url}" alt="Question Image" style="max-width: 100%; border-radius: 6px;" />
+                                            </div>
+                                        ` : ''}
                                         <div class="options-review">
                                             ${question.options.map((option, optIndex) => {
                                                 let className = '';
@@ -414,6 +431,15 @@
                                                 return `<div class="option-review ${className}">${option}</div>`;
                                             }).join('')}
                                         </div>
+                                        <div class="explanation" style="margin-top: 10px;">
+                                            <strong>Explanation:</strong>
+                                            <p>${explanationText || 'No explanation provided.'}</p>
+                                            ${explanationImageUrl ? `
+                                                <div class="explanation-image" style="margin-top: 8px;">
+                                                    <img src="${explanationImageUrl}" alt="Explanation Image" style="max-width: 100%; border-radius: 6px;" onerror="this.style.display='none'" />
+                                                </div>
+                                            ` : ''}
+                                        </div>
                                     </div>
                                 `;
                             }).join('')}
@@ -421,6 +447,15 @@
                     </div>
                 </div>
             `;
+        }
+
+        function toggleStudentExplanations() {
+            const section = document.getElementById('student-explanations-section');
+            const btn = document.getElementById('toggle-explanations-student');
+            if (!section || !btn) return;
+            const isHidden = section.style.display === 'none';
+            section.style.display = isHidden ? 'block' : 'none';
+            btn.textContent = isHidden ? 'Hide Answers & Explanations' : 'Show Answers & Explanations';
         }
 
         function formatTime(seconds) {
