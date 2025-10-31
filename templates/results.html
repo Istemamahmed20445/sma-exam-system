@@ -81,9 +81,12 @@
                             <p class="status"><strong>Status:</strong> ${passed ? 'PASSED ✓' : 'FAILED ✗'}</p>
                         </div>
                     </div>
+                    <div style="margin-top: 16px;">
+                        <button id="toggle-explanations-btn" class="btn-primary" onclick="toggleExplanations()">Show Answers & Explanations</button>
+                    </div>
                 </div>
 
-                <div class="questions-review">
+                <div id="explanations-section" class="questions-review" style="display: none;">
                     <h3>Question Review</h3>
                     ${exam.questions.map((question, index) => {
                         const studentAnswer = result.answers[index];
@@ -160,6 +163,19 @@
                     }).join('')}
                 </div>
             `;
+
+            // Ensure section is hidden by default on render
+            const section = document.getElementById('explanations-section');
+            if (section) section.style.display = 'none';
+        }
+
+        function toggleExplanations() {
+            const section = document.getElementById('explanations-section');
+            const btn = document.getElementById('toggle-explanations-btn');
+            if (!section || !btn) return;
+            const isHidden = section.style.display === 'none';
+            section.style.display = isHidden ? 'block' : 'none';
+            btn.textContent = isHidden ? 'Hide Answers & Explanations' : 'Show Answers & Explanations';
         }
 
         // Load results on page load
